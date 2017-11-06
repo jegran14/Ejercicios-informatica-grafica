@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+
+    <meta charset="utf-8">
+    <title> Informática Gráfica </title>
+    <style type="text/css">
+      canvas {border: 1px solid black;}
+    </style>
+
+    <script id="myVertexShader" type="x-shader/x-vertex">
+      
+      uniform   mat4 projectionMatrix;
+      uniform   mat4 modelViewMatrix;
+      
+      attribute vec3 VertexPosition;
+      
+      void main()  {
+        
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(VertexPosition,1.0);
+      
+      }
+      
+    </script>
+    
+    <script id="myFragmentShader" type="x-shader/x-fragment">
+      
+      void main() {
+      
+        gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+      
+      }
+      
+    </script>
+
+  </head>
+  
+  <body>
+
+    <button>Plano</button> 
+    <button>Cubo</button> 
+    <button>Cono</button> 
+    <button>Cilindro</button> 
+    <button>Esfera</button> 
+    <button>Toro</button> 
+
+    <br>
+    <strong>Phi: </strong><span id="Phi"></span>
+    <br>
+    <strong>Zeta: </strong><span id="Zeta"></span>
+    <br>
+    <strong>Radius: </strong><span id="Radius"></span>
+    <br>
+    <strong>Fovy: </strong><span id="Fovy"></span>
+    <br>
+
+    <canvas id="myCanvas" width="500" height="500">
+      El Navegador no soporta HTML5
+    </canvas>
+    
+    <script src="gl-matrix-min.js"></script>
+    <script src="primitivas.js"></script>
+    <script src="toro.js"></script>
+    <script src="mueveLaCamara.js"></script>
+
+  </body>
+
+</html>

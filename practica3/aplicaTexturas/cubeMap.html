@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  
+    <meta charset="utf-8">
+    <title> Informática Gráfica </title>
+    <style>
+      canvas {border: 1px solid black;}
+    </style>
+    
+    <script id="myVertexShader" type="x-shader/x-vertex">
+        
+      uniform   mat4 projectionMatrix;
+      uniform   mat4 modelViewMatrix;
+      uniform   mat3 normalMatrix;
+      
+      uniform   bool skybox;
+      uniform   mat3 invT;
+      
+      attribute vec3 VertexPosition, VertexNormal;
+      
+      varying   vec3 R;
+      
+      void main()  {
+      
+        vec3 N          = normalize(normalMatrix * VertexNormal);
+        vec4 ecPosition = modelViewMatrix * vec4(VertexPosition,1.0);
+        vec3 ec         = vec3(ecPosition);
+        
+        gl_Position     = projectionMatrix * ecPosition;
+        
+        if (skybox)
+          R = vec3(VertexPosition);
+        else
+          R = invT * reflect (normalize(ec), N);
+
+      }
+
+      
+    </script>
+      
+    <script id="myFragmentShader" type="x-shader/x-fragment">
+    
+      precision mediump float;
+      
+      uniform samplerCube myTexture;
+      
+      varying vec3 R;
+      
+      void main() {
+      
+        gl_FragColor = textureCube(myTexture, R);
+        
+      }
+      
+    </script>
+    
+  </head>
+  
+  <body>
+    
+    <canvas id="myCanvas" width="800" height="400">
+      El Navegador no soporta HTML5
+    </canvas>
+      
+    <script src="gl-matrix-min.js"></script>
+    <script src="primitivas.js"></script>
+    <script src="cubeMap.js"></script>
+      
+  </body>
+  
+</html>
