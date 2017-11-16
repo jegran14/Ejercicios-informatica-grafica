@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  
+    <meta charset="utf-8">
+    <title> Informática Gráfica </title>
+    <style type="text/css">
+      canvas {border: 1px solid black;}
+    </style>
+
+    <script id="myVertexShader" type="x-shader/x-vertex">
+
+      uniform   mat4 modelMatrix;
+      
+      attribute vec3 VertexPosition;
+      
+      void main()  {
+        
+        gl_Position = modelMatrix * vec4(VertexPosition,1.0);
+      
+      }
+    
+    </script>
+    
+    <script id="myFragmentShader" type="x-shader/x-fragment">
+      
+      void main() {
+
+        gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+
+      }
+    
+    </script>
+
+  </head>
+
+  <body>
+
+    <canvas id="myCanvas" width="600" height="600">
+      El Navegador no soporta HTML5
+    </canvas>
+
+    <script src = "gl-matrix-min.js"></script>
+    <script src = "primitivas.js"></script>
+    <script src = "transforma.js"></script>
+
+  </body>
+  
+</html>
