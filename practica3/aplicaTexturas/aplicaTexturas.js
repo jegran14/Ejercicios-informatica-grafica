@@ -216,9 +216,11 @@ function drawScene() {
   // se obtiene la matriz de transformacion de la proyeccion y se envia al shader
   setShaderProjectionMatrix(getProjectionMatrix());
 
+  //Dibujar mesa
+  
   // se calcula la matriz de transformación del modelo
   var modelMatrix = mat4.create();  
-  mat4.fromScaling (modelMatrix, [0.5, 0.5, 0.5]);
+  mat4.fromScaling (modelMatrix, [1, 1, 1]);
   
   // se opera la matriz de transformacion de la camara con la del modelo y se envia al shader
   var modelViewMatrix = mat4.create();
@@ -234,15 +236,28 @@ function drawScene() {
     
   // se selecciona una unidad de textura
   gl.activeTexture(gl.TEXTURE3);
-
-  // se asigna un objeto textura a la unidad de textura activa
-  gl.bindTexture(gl.TEXTURE_2D, texturesId[0]);
-  drawSolid(exampleCone);
-    
-  // se cambia el objeto textura de la unidad de textura activa
+  
   gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
-  drawSolid(exampleCube); 
+  drawSolid(examplePlane); 
+  
+  //Crear niveles del objeto
 
+}
+
+function DrawCubeLines(var rot)
+{
+	var modelMatrix = mat4.create();
+	var modelViewMatrix = mat4.create();
+	var matA = mat4.create(); //Transform matrix
+	var matB = mat4.create(); //RotationMatrix
+	var matC = mat4.create(); //ScaleMatrix
+	
+	mat4.formScaling
+	
+	for(var i = 0; i < 3; i++)
+	{
+		
+	}
 }
 
 function initHandlers() {
@@ -465,7 +480,7 @@ function loadTextureFromServer (filename, texturePos) {
 function initTextures() {
 
   var serverUrl    = "http://cphoto.uji.es/vj1221/assets/textures/";
-  var texFilenames = ["alpha_maps/alpha_map01.jpg", "lined_shirt_material_2020101.JPG"];
+  var texFilenames = ["wood_1163214.JPG", " painted_wood_stained_4185.JPG"];
 
   for (var texturePos = 0; texturePos < texFilenames.length; texturePos++) {
   

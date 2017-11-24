@@ -6,6 +6,7 @@ var selectedPrimitive = exampleCone;
 var outerAngle = 0;
 var middleAngle = 0;
 var innerAngle = 0;
+var lightPosition = [20, 2, -50];
 
 function getWebGLContext() {
     
@@ -77,10 +78,10 @@ function initShaders() {
 
 function initRendering() {
 
-  gl.clearColor(0.0,0.15,0.15,1.0);
+  gl.clearColor(0.15,0.15,0.15,1.0);
   gl.enable(gl.DEPTH_TEST);
 
-  setShadersLight();
+  setShaderLight();
 
 }
 
@@ -98,12 +99,12 @@ function initBuffers(model) {
 
 function drawWire(model) {
     
-  gl.bindBuffer (gl.ARRAY_BUFFER, model.idBufferVertices);
-  gl.vertexAttribPointer (program.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
+ gl.bindBuffer (gl.ARRAY_BUFFER, model.idBufferVertices);
+ gl.vertexAttribPointer (program.vertexPositionAttribute, 3, gl.FLOAT, false, 2*3*4,   0);
+ gl.vertexAttribPointer (program.vertexNormalAttribute,   3, gl.FLOAT, false, 2*3*4, 3*4);
     
-  gl.bindBuffer (gl.ELEMENT_ARRAY_BUFFER, model.idBufferIndices);
-  for (var i = 0; i < model.indices.length; i += 3)
-    gl.drawElements (gl.LINE_LOOP, 3, gl.UNSIGNED_SHORT, i*2);
+ gl.bindBuffer   (gl.ELEMENT_ARRAY_BUFFER, model.idBufferIndices);
+ gl.drawElements (gl.TRIANGLES, model.indices.length, gl.UNSIGNED_SHORT, 0);
 
 }
 
@@ -126,11 +127,11 @@ function initPrimitives() {
   
 }
 
-function setShaderPrjectionMatrix(projectionMatrix) {
+function setShaderProjectionMatrix(projectionMatrix) {
 	gl.uniformMatrix4fv(program.projectionMatrixIndex, false, projectionMatrix);
 }
 
-unction setShaderModelViewMatrix(modelViewMatrix) {
+function setShaderModelViewMatrix(modelViewMatrix) {
   
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
   
@@ -189,11 +190,36 @@ function getCameraMatrix() {
 
 }
 
+function setShaderMaterial(material) {
+
+  gl.uniform3fv(program.KaIndex,    material.mat_ambient);
+  gl.uniform3fv(program.KdIndex,    material.mat_diffuse);
+  gl.uniform3fv(program.KsIndex,    material.mat_specular);
+  gl.uniform1f (program.alphaIndex, material.alpha);
+  
+}
+
+function setShaderLight() {
+
+  gl.uniform3f(program.LaIndex,       1.0,1.0,1.0);
+  gl.uniform3f(program.LdIndex,       1.0,1.0,1.0);
+  gl.uniform3f(program.LsIndex,       1.0,1.0,1.0);
+  gl.uniform3fv(program.PositionIndex, lightPosition); // en coordenadas del ojo
+  
+}
+
 function drawScene() {
     
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  // se inicializan los buffers de color y de profundidad
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // se obtiene la matriz de transformacion de la proyeccion y se envia al shader
+  setShaderProjectionMatrix(getProjectionMatrix());
 
   setProjection();
+
+  vec3.transformMat4(lightPosition, [20, 2, -50], getCameraMatrix());
+  setShaderLight();
 /*
   // 1. calcula la matriz de transformación del modelo-vista
   var modelMatrix     = mat4.create();
@@ -217,8 +243,12 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   
-  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
+  setShaderMaterial(Jade);
   drawWire(exampleSphere);
 
   //Piezas exteiores
@@ -233,6 +263,10 @@ function drawScene() {
 
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(myTorusExt);
 
@@ -256,6 +290,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
   
@@ -275,6 +313,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
 
@@ -291,6 +333,10 @@ function drawScene() {
 
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
 
   drawWire(myTorusMed);
   
@@ -316,6 +362,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
   
@@ -336,6 +386,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
   
@@ -353,6 +407,10 @@ function drawScene() {
 
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
 
   drawWire(myTorusInt);
 
@@ -376,6 +434,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
   
@@ -397,6 +459,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
   
@@ -418,6 +484,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
   
@@ -435,6 +505,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCylinder);
 
@@ -455,6 +529,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCone);
 
@@ -470,6 +548,10 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
   
   drawWire(exampleCone);
 
@@ -486,6 +568,13 @@ function drawScene() {
   
   mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
   gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+
+  setShaderModelViewMatrix(modelViewMatrix);
+
+  // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  
+  setShaderMaterial(Ruby);
   
   drawWire(examplePlane);
 

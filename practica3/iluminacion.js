@@ -178,7 +178,7 @@ function setShaderLight() {
   gl.uniform3f(program.LaIndex,       1.0,1.0,1.0);
   gl.uniform3f(program.LdIndex,       1.0,1.0,1.0);
   gl.uniform3f(program.LsIndex,       1.0,1.0,1.0);
-  gl.uniform3f(program.PositionIndex, 10.0,10.0,0.0); // en coordenadas del ojo
+  gl.uniform3f(program.PositionIndex, 0.0,0.0,0.0); // en coordenadas del ojo
   
 }
 
