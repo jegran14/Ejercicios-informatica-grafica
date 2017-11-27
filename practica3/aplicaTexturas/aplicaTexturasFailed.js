@@ -1,8 +1,6 @@
 
 var gl, program;
 var myphi = 0, zeta = 30, radius = 15, fovy = Math.PI/30;
-var updateLP = [0, 1, 1];
-var LightPos = [0, 1, 1];
 
 var texturesId = [];
 
@@ -187,7 +185,7 @@ function setShaderLight() {
   gl.uniform3f(program.LaIndex,       1.0,1.0,1.0);
   gl.uniform3f(program.LdIndex,       1.0,1.0,1.0);
   gl.uniform3f(program.LsIndex,       1.0,1.0,1.0);
-  gl.uniform3fv(program.PositionIndex, updateLP); // en coordenadas del ojo
+  gl.uniform3f(program.PositionIndex, 10.0,10.0,0.0); // en coordenadas del ojo
 
 }
 
@@ -218,10 +216,6 @@ function drawScene() {
   // se obtiene la matriz de transformacion de la proyeccion y se envia al shader
   setShaderProjectionMatrix(getProjectionMatrix());
 
-  //Recalcular la luz
-  vec3.transformMat4(updateLP, LightPos, getCameraMatrix());
-  setShaderLight();
-
   //Dibujar mesa
   var modelMatrix = mat4.create();
   var modelViewMatrix = mat4.create();
@@ -241,7 +235,7 @@ function drawScene() {
   setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
 
   // se envia al Shader el material del objeto
-  setShaderMaterial(Chrome);
+  setShaderMaterial(White_plastic);
 
   // se selecciona una unidad de textura
   gl.activeTexture(gl.TEXTURE3);
@@ -250,7 +244,7 @@ function drawScene() {
   drawSolid(examplePlane);
 
   //Crear niveles del objeto
-  for(var i = 0; i < 7; i++)
+  for(var i = 0; i < 3; i++)
   {
     DrawCubeLines(i);
   }
@@ -272,15 +266,14 @@ function DrawCubeLines(level)
 	   mat4.identity(modelMatrix);
      mat4.identity(modelViewMatrix);
 
-     mat4.fromTranslation(matA, [((i-1)*0.1*(level%2)), ((0.05*level)+0.025), ((i-1)*0.1*-((level+1)%2))]);
+     mat4.fromTranslation(matA, [(i-1)*0.5*(level%2), 0.25*level, (i-1)*0.5*-((level+1)%2)]);
 
-     mat4.multiply(modelMatrix, matA, matB);
-     mat4.multiply(modelMatrix, modelMatrix, matC);
+     mat4.multiply(modelMatrix, matB, matC);
+     mat4.multiply(modelMatrix, matA, modelMatrix);
 
      mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
 
      // se obtiene la matriz de transformacion de la normal y se envia al shader
-     gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
      setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
 
      // se envia al Shader el material del objeto
@@ -288,7 +281,7 @@ function DrawCubeLines(level)
      setShaderMaterial(White_plastic);
 
      // se selecciona una unidad de textura
-     gl.activeTexture(gl.TEXTURE3);
+     //gl.activeTexture(gl.TEXTURE3);
 
      gl.bindTexture(gl.TEXTURE_2D, texturesId[0]);
      drawSolid(exampleCube);
