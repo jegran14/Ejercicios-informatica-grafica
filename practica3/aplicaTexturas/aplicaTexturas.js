@@ -1,8 +1,8 @@
 
 var gl, program;
 var myphi = 0, zeta = 30, radius = 15, fovy = Math.PI/30;
-var updateLP = [0, 1, 1];
-var LightPos = [0, 1, 1];
+var updateLP = [2, 1, 1];
+var LightPos = [2, 1, 1];
 
 var texturesId = [];
 
@@ -222,6 +222,12 @@ function drawScene() {
   vec3.transformMat4(updateLP, LightPos, getCameraMatrix());
   setShaderLight();
 
+  //Crear niveles del objeto
+  for(var i = 0; i < 7; i++)
+  {
+    DrawCubeLines(i);
+  }
+
   //Dibujar mesa
   var modelMatrix = mat4.create();
   var modelViewMatrix = mat4.create();
@@ -248,12 +254,6 @@ function drawScene() {
 
   gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
   drawSolid(examplePlane);
-
-  //Crear niveles del objeto
-  for(var i = 0; i < 7; i++)
-  {
-    DrawCubeLines(i);
-  }
 }
 
 function DrawCubeLines(level)
