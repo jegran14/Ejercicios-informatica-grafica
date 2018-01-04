@@ -181,9 +181,19 @@
         vec3 L = normalize(Light.Position - ec);
         vec3 V = normalize(-ec);
 
-        //gl_FragColor = mix(texture2D(myTexture, texCoords), vec4(phong(n,L,V),1.0), 0.3);
-        gl_FragColor = texture2D(myTexture, texCoords*repetition) * vec4(phong(n,L,V),1.0) * 1.6;
+        if(UseProcedural == 0)
+        {
+          //gl_FragColor = mix(texture2D(myTexture, texCoords), vec4(phong(n,L,V),1.0), 0.3);
+          gl_FragColor = texture2D(myTexture, texCoords*repetition) * vec4(phong(n,L,V),1.0) * 1.6;
 
+        }
+        else if(UseProcedural == 1)
+        {
+          float s     = snoise(texCoords3);
+          s= clamp(abs(s)*2.6,0.0,1.0);
+    			vec3  newKdNoise = mix (Color1, Color2, s);
+          gl_FragColor =vec4( phongP(newKdNoise, n,L,V), 1.0);
+        }
       }
 
     </script>
