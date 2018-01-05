@@ -15,6 +15,10 @@
       uniform   mat4 modelViewMatrix;
       uniform   mat3 normalMatrix;
 
+      //Skybox variables
+      uniform bool skybox;
+      uniform mat3 invT;
+
       uniform float Scale;
 
       attribute vec3 VertexPosition;
@@ -25,6 +29,8 @@
       varying vec2 texCoords;
       varying vec3 texCoords3;
 
+      varying vec3 R;
+
       void main()  {
 
         N               = normalize(normalMatrix * VertexNormal);
@@ -34,6 +40,12 @@
         gl_Position     = projectionMatrix * ecPosition;
         texCoords       = VertexTexcoords;
         texCoords3      = VertexPosition * Scale;
+
+        //Skybox logic
+        if(skybox)
+          R = vec3(VertexPosition);
+        else
+          R = invT * reflect (normalize(ec), N);
       }
 
     </script>
@@ -59,6 +71,10 @@
 
       uniform sampler2D myTexture;
       uniform float     repetition;
+
+      //Skybox variables
+      uniform samplerCube myTextureCube;
+      varying vec3 R;
 
       uniform int UseProcedural;
 
@@ -181,13 +197,17 @@
         vec3 L = normalize(Light.Position - ec);
         vec3 V = normalize(-ec);
 
-        if(UseProcedural == 0)
+        if(UseProcedural == -1) //Skybox
+        {
+          gl_FragColor = textureCube(myTextureCube, R);
+        }
+        else if(UseProcedural == 0) //2D textures
         {
           //gl_FragColor = mix(texture2D(myTexture, texCoords), vec4(phong(n,L,V),1.0), 0.3);
           gl_FragColor = texture2D(myTexture, texCoords*repetition) * vec4(phong(n,L,V),1.0) * 1.6;
 
         }
-        else if(UseProcedural == 1)
+        else if(UseProcedural == 1) //marmol/granito textura procedural
         {
           float s     = snoise(texCoords3);
           s= clamp(abs(s)*2.6,0.0,1.0);

@@ -1,13 +1,18 @@
 
 var gl, program;
 var myphi = 0, zeta = 30, radius = 40, fovy = Math.PI/2;
+var nGrados = 0;
 
 var texturesId = [];
+var texturesIdCube = [];
+
+var totalCubes = 7; //Total of cubes in the genga tower
 
 //Objects dimensions
 var x = 0, y = 1, z = 2;
-var tableDimensions = [20.0, 3.0, 20.0];
-var cubesDimensaions = [5.0, 1.0, 1.0];
+var tableDimensions = [20.0, 2.0, 20.0];
+var tableLegDimensions = [5.0, 50.0, 5.0];
+var cubeDimensions = [3.0, 1.0, 1.0];
 
 function getWebGLContext() {
 
@@ -72,6 +77,11 @@ function initShaders() {
   gl.uniform1i(program.myTextureIndex, 3);
   gl.uniform1f(program.repetition,     1.0);
 
+  //skybox
+  program.skyboxIndex           = gl.getUniformLocation(program, "skybox");
+  program.invTIndex             = gl.getUniformLocation(program, "invT");
+  program.myTextureCube         = gl.getUniformLocation(program, "myTextureCube");
+
   // material
   program.KaIndex               = gl.getUniformLocation( program, "Material.Ka");
   program.KdIndex               = gl.getUniformLocation( program, "Material.Kd");
@@ -88,11 +98,12 @@ function initShaders() {
   program.Color1Index           = gl.getUniformLocation(program, "Color1");
   program.Color2Index           = gl.getUniformLocation(program, "Color2");
   program.ScaleIndex            = gl.getUniformLocation(program, "Scale");
-  gl.uniform1f(program.ScaleIndex, 10.0);
+  gl.uniform1f(program.ScaleIndex, 25.0);
   gl.uniform3f(program.Color2Index, 1.0, 1.0, 1.0);
-  gl.uniform3f(program.Color1index, 0.0, 0.0, 0.0);
+  gl.uniform3f(program.Color1index, 0.3, 0.3, 0.3);
 
   program.UseProceduralIndex    = gl.getUniformLocation(program, "UseProcedural");
+  gl.uniform1i(program.myTextureCubeIndex, 0);
 }
 
 function initRendering() {
@@ -220,6 +231,31 @@ function drawSolid(model) {
 
 }
 
+function drawSkyboxAndReflectObject()
+{
+  setProcedural(-1);
+
+  var _phi    = myphi * Math.PI / 180.0;
+  var _zeta   = zeta * Math.PI/180.0;
+  var x       = radius * Math.cos(_zeta) * Math.sin(_phi);
+  var y     = radius * Math.sin(_zeta);
+  var z     = radius * Math.cos(_zeta) * Math.cos(_phi);
+
+  var modelMatrix      = mat4.create();
+  var modelViewMatrix  = mat4.create();
+  var aux              = mat4.create();
+
+  mat4.fromTranslation (aux, [x, y, z]);
+  mat4.fromScaling     (modelMatrix, [100.0,100.0,100.0]);
+  mat4.multiply  (modelMatrix, aux, modelMatrix);
+  mat4.multiply  (modelViewMatrix, getCameraMatrix(), modelMatrix);
+  setShaderModelViewMatrix  (modelViewMatrix);
+
+  gl.uniform1f (program.skyboxIndex, 1.0);
+  drawSolid (exampleCube);
+  gl.uniform1f (program.skyboxIndex, 0.0);
+}
+
 function drawScene() {
 
   // dibujamos la escena solo si todas las texturas tienen ya una imagen cargada
@@ -235,10 +271,16 @@ function drawScene() {
   // se obtiene la matriz de transformacion de la proyeccion y se envia al shader
   setShaderProjectionMatrix(getProjectionMatrix());
 
-  drawTable();
+  //Skybox
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texturesIdCube[0]);
+  drawSkyboxAndReflectObject();
+
+  DrawTable();
+  DrawCubes();
 }
 
-function drawTable()
+function DrawTable()
 {
   setProcedural(1);
   var modelMatrix = mat4.create();
@@ -270,6 +312,104 @@ function drawTable()
   // se cambia el objeto textura de la unidad de textura activa
   gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
   drawSolid(exampleCylinder);
+
+  //Superficies de la mesa
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromScaling(matS, [tableDimensions[x], 0.000001, tableDimensions[z]]);
+  mat4.fromRotation(matR, -Math.PI/2, [1, 0, 0]);
+
+  mat4.multiply(modelMatrix, matS, matR);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  drawSolid(exampleCone);
+
+  mat4.fromRotation(matR, Math.PI, [1, 0, 0]);
+  mat4.fromTranslation(matT, [0, -tableDimensions[y], 0]);
+
+  mat4.multiply(modelMatrix, matR, modelMatrix);
+  mat4.multiply(modelMatrix, matT, modelMatrix);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  drawSolid(exampleCone);
+
+  //pata de la mesa
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromRotation(matR, Math.PI/2, [1, 0, 0]);
+  mat4.fromScaling(matS, [tableLegDimensions[x], tableLegDimensions[y], tableLegDimensions[z]]);
+  mat4.fromTranslation(matT, [0, -(tableLegDimensions[y] + tableDimensions[y]), 0]);
+
+  mat4.multiply(modelMatrix, matS, matR);
+  mat4.multiply(modelMatrix, matT, modelMatrix);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  drawSolid(exampleCylinder);
+
+
+}
+
+function DrawCubes()
+{
+  setProcedural(0);
+
+  for(var i = 0; i < totalCubes; i++)
+  {
+    DrawCubeLines(i);
+  }
+}
+
+function DrawCubeLines(level)
+{
+	var modelMatrix = mat4.create();
+	var modelViewMatrix = mat4.create();
+	var matA = mat4.create(); //Translation matrix
+	var matB = mat4.create(); //RotationMatrix
+	var matC = mat4.create(); //ScaleMatrix
+
+  mat4.fromRotation(matB, (Math.PI/2)*((level)%2), [0, 1, 0]);
+  mat4.fromScaling(matC, [cubeDimensions[x], cubeDimensions[y], cubeDimensions[z]]);
+
+	for(var i = 0; i < 3; i++)
+	{
+	   mat4.identity(modelMatrix);
+     mat4.identity(modelViewMatrix);
+
+     mat4.fromTranslation(matA, [((i-1)*cubeDimensions[z]*(level%2)), ((cubeDimensions[y]*level)+cubeDimensions[y]/2), ((i-1)*cubeDimensions[z]*-((level+1)%2))]);
+
+     mat4.multiply(modelMatrix, matB, matC);
+     mat4.multiply(modelMatrix, matA, modelMatrix);
+
+     mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+
+     // se obtiene la matriz de transformacion de la normal y se envia al shader
+     gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+     setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+
+     // se envia al Shader el material del objeto
+     // En este ejemplo es el mismo material para los dos objetos
+     setShaderMaterial(White_plastic);
+
+     // se selecciona una unidad de textura
+     gl.activeTexture(gl.TEXTURE3);
+
+     gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
+     drawSolid(exampleCube);
+	}
 }
 
 function initHandlers() {
@@ -409,6 +549,111 @@ function nextHighestPowerOfTwo(x) {
 
 }
 
+function setCubeMapTexture(image, texturePos) {
+
+  image.cont++;
+
+  if (image.cont!= 6) return;
+
+  var faces = [["posx.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_X],
+               ["negx.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_X],
+               ["posy.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Y],
+               ["negy.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Y],
+               ["posz.jpg", gl.TEXTURE_CUBE_MAP_POSITIVE_Z],
+               ["negz.jpg", gl.TEXTURE_CUBE_MAP_NEGATIVE_Z]];
+
+  // se indica el objeto textura
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, texturesIdCube[texturePos]);
+
+  // parametros de filtrado
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  // parametros de repeticion (coordenadas de textura mayores a uno)
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  for (var i = 0; i < 6; i++) {
+
+    // las hacemos potencia de dos si no lo son
+    if (!isPowerOfTwo(image[i].width) || !isPowerOfTwo(image[i].height)) {
+
+      // Scale up the texture to the next highest power of two dimensions.
+      var canvas    = document.createElement("canvas");
+      canvas.width  = nextHighestPowerOfTwo(image[i].width);
+      canvas.height = nextHighestPowerOfTwo(image[i].height);
+
+      var ctx       = canvas.getContext("2d");
+      ctx.drawImage(image[i], 0, 0, canvas.width, canvas.height);
+      image[i] = canvas;
+
+    }
+    //gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+
+    // datos de la textura
+    gl.texImage2D (faces[i][1], 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image[i]);
+
+  }
+
+  texturesIdCube[texturePos].loaded = true;
+  requestAnimationFrame(drawScene);
+
+}
+
+function loadCubeMapFromServer(folder, texturePos) {
+
+  var image = [];
+  var name  = [];
+
+  image.cont = 0;
+
+  for (var i = 0; i < 6; i++) {
+
+    name[i]  = folder;
+    image[i] = new Image();
+
+    switch (i) {
+      case 0 : name[i] += "posx.jpg"; break;
+      case 1 : name[i] += "negx.jpg"; break;
+      case 2 : name[i] += "posy.jpg"; break;
+      case 3 : name[i] += "negy.jpg"; break;
+      case 4 : name[i] += "posz.jpg"; break;
+      case 5 : name[i] += "negz.jpg"; break;
+    }
+
+    image[i].addEventListener("load",
+                       function() {
+                       setCubeMapTexture(image, texturePos);
+                       }, false);
+    image[i].addEventListener("error",
+                       function(err) {
+                       console.log("MALA SUERTE: no esta disponible " + this.src);
+                       }, false);
+    image[i].crossOrigin = 'anonymous';
+    image[i].src         = name[i];
+
+  }
+}
+
+function initTexturesCube() {
+
+
+  var serverUrl  = "http://cphoto.uji.es/vj1221/assets/textures/";
+  var texFolders = ["PereaBeach1/"];
+
+  for (var texturePos = 0; texturePos < texFolders.length; texturePos++) {
+
+    // creo el objeto textura
+    texturesIdCube[texturePos] = gl.createTexture();
+    texturesIdCube[texturePos].loaded = false;
+
+    // solicito la carga de la textura
+    loadCubeMapFromServer(serverUrl+texFolders[texturePos], texturePos);
+
+  }
+
+}
+
 function setTexture (image, texturePos) {
 
   // la hacemos de tamaño potencia de dos
@@ -492,7 +737,7 @@ function loadTextureFromServer (filename, texturePos) {
 function initTextures() {
 
   var serverUrl    = "http://cphoto.uji.es/vj1221/assets/textures/";
-  var texFilenames = ["alpha_maps/alpha_map01.jpg", "lined_shirt_material_2020101.JPG"];
+  var texFilenames = ["alpha_maps/alpha_map01.jpg", "wood_1163214.JPG"];
 
   for (var texturePos = 0; texturePos < texFilenames.length; texturePos++) {
 
@@ -523,6 +768,7 @@ function initWebGL() {
   initTextures();
 
 //   requestAnimationFrame(drawScene);
+  initTexturesCube();
 
 }
 
