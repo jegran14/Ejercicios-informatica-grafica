@@ -1,7 +1,6 @@
 
 var gl, program;
-var myphi = 0, zeta = 30, radius = 40, fovy = Math.PI/2;
-var nGrados = 0;
+var myphi = 0, zeta = 30, radius = 40, fovy = Math.PI/3;
 
 var texturesId = [];
 var texturesIdCube = [];
@@ -11,7 +10,7 @@ var totalCubes = 7; //Total of cubes in the genga tower
 //Objects dimensions
 var x = 0, y = 1, z = 2;
 var tableDimensions = [20.0, 2.0, 20.0];
-var tableLegDimensions = [5.0, 50.0, 5.0];
+var tableLegDimensions = [3.0, 50.0, 3.0];
 var cubeDimensions = [3.0, 1.0, 1.0];
 
 function getWebGLContext() {
@@ -94,13 +93,19 @@ function initShaders() {
   program.LsIndex               = gl.getUniformLocation( program, "Light.Ls");
   program.PositionIndex         = gl.getUniformLocation( program, "Light.Position");
 
-  //Porpios del shader
+  //Porpios del shader procedural por ejemplo el marmol
   program.Color1Index           = gl.getUniformLocation(program, "Color1");
   program.Color2Index           = gl.getUniformLocation(program, "Color2");
   program.ScaleIndex            = gl.getUniformLocation(program, "Scale");
-  gl.uniform1f(program.ScaleIndex, 25.0);
+  gl.uniform1f(program.ScaleIndex, 10.0);
   gl.uniform3f(program.Color2Index, 1.0, 1.0, 1.0);
   gl.uniform3f(program.Color1index, 0.3, 0.3, 0.3);
+
+  //Shader de la pata de la mesa
+  program.StripeWidthIndex      = gl.getUniformLocation(program, "StripeWidth");
+  program.StripeScale           = gl.getUniformLocation(program, "StripeScale");
+  gl.uniform1f(program.StripeWidthIndex, 5.0);
+  gl.uniform1f(program.StripeScaleIndex, 20.0);
 
   program.UseProceduralIndex    = gl.getUniformLocation(program, "UseProcedural");
   gl.uniform1i(program.myTextureCubeIndex, 0);
@@ -246,7 +251,7 @@ function drawSkyboxAndReflectObject()
   var aux              = mat4.create();
 
   mat4.fromTranslation (aux, [x, y, z]);
-  mat4.fromScaling     (modelMatrix, [100.0,100.0,100.0]);
+  mat4.fromScaling     (modelMatrix, [120.0,120.0,120.0]);
   mat4.multiply  (modelMatrix, aux, modelMatrix);
   mat4.multiply  (modelViewMatrix, getCameraMatrix(), modelMatrix);
   setShaderModelViewMatrix  (modelViewMatrix);
@@ -343,12 +348,13 @@ function DrawTable()
   drawSolid(exampleCone);
 
   //pata de la mesa
+  setProcedural(2);
   mat4.identity(modelMatrix);
   mat4.identity(modelViewMatrix);
 
   mat4.fromRotation(matR, Math.PI/2, [1, 0, 0]);
   mat4.fromScaling(matS, [tableLegDimensions[x], tableLegDimensions[y], tableLegDimensions[z]]);
-  mat4.fromTranslation(matT, [0, -(tableLegDimensions[y] + tableDimensions[y]), 0]);
+  mat4.fromTranslation(matT, [0, -tableDimensions[y], 0]);
 
   mat4.multiply(modelMatrix, matS, matR);
   mat4.multiply(modelMatrix, matT, modelMatrix);
