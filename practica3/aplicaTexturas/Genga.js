@@ -539,7 +539,7 @@ function DrawLavaLamp()
   mat4.identity(modelMatrix);
   mat4.identity(modelViewMatrix);
 
-  mat4.fromScaling(matS, [LavaLegDimensions[x]*1.5, 0.5, LavaLegDimensions[z]*1.5]);
+  mat4.fromScaling(matS, [LavaLegDimensions[x], 0.5, LavaLegDimensions[z]]);
   mat4.fromTranslation(matT, [LavaLampPosition[x], 0.0, LavaLampPosition[z]]);
   mat4.multiply(modelMatrix, matS, matR);
   mat4.multiply(modelMatrix, matT, modelMatrix);
