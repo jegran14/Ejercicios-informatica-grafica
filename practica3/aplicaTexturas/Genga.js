@@ -6,7 +6,7 @@ var time = 0.0;
 var texturesId = [];
 var texturesIdCube = [];
 
-var totalCubes = 7; //Total of cubes in the genga tower
+var totalCubes = 15; //Total of cubes in the genga tower
 
 //Objects dimensions and positions
 var x = 0, y = 1, z = 2;
@@ -20,7 +20,7 @@ var cubeDimensions = [3.0, 1.0, 1.0];
 var LavaLampDimensions = [2.0, 4.0, 2.0]; //The size for each part of the lava Lamp exterior
 var LavaIntDimensions = [1.5, 3.0, 1.5];
 var LavaLegDimensions = [1.0, 1.0, 1.0];
-var LavaLampPosition = [8.0, LavaLampDimensions[y] + LavaLegDimensions[y]/2, 8.0];
+var LavaLampPosition = [4.0, LavaLampDimensions[y] + LavaLegDimensions[y]/2, 4.0];
 
 function getWebGLContext() {
 
@@ -112,7 +112,7 @@ function initShaders() {
 
   // propia del shader de enrejado
   program.StripeScaleIndex      = gl.getUniformLocation( program, "StripeScale");
-  gl.uniform2f(program.StripeScaleIndex, 3.5, 10.0);
+  gl.uniform2f(program.StripeScaleIndex, 4, 12);
 
   //Animation shader
   program.KIndex                = gl.getUniformLocation(program, "K");
@@ -257,6 +257,23 @@ function SetAnimation(i)
   gl.uniform1i(program.UseAnimationIndex, i);
 }
 
+function isPrime(num) {
+    if(num <= 2) return false;
+    for (var i = 2; i < num; i++) {
+        if(num%i==0)
+            return false;
+    }
+    return true;
+}
+
+function UpdateTime()
+{
+  time += 0.01;
+  gl.uniform1f(program.TiempoIndex, time);
+
+  requestAnimationFrame(drawScene);
+}
+
 function drawSolid(model) {
 
   gl.bindBuffer (gl.ARRAY_BUFFER, model.idBufferVertices);
@@ -267,14 +284,6 @@ function drawSolid(model) {
   gl.bindBuffer   (gl.ELEMENT_ARRAY_BUFFER, model.idBufferIndices);
   gl.drawElements (gl.TRIANGLES, model.indices.length, gl.UNSIGNED_SHORT, 0);
 
-}
-
-function UpdateTime()
-{
-  time += 0.01;
-  gl.uniform1f(program.TiempoIndex, time);
-
-  requestAnimationFrame(drawScene);
 }
 
 function drawSkyboxAndReflectObject()
@@ -416,14 +425,14 @@ function DrawTable()
 
   drawSolid(exampleCylinder);
 
-  //Pie de la mesa
+  //interior de la pata de la mesa
   setProcedural(0);
   mat4.identity(modelMatrix);
   mat4.identity(modelViewMatrix);
 
-  mat4.fromRotation(matR, -Math.PI/2, [1, 0, 0]);
-  mat4.fromScaling(matS, [tableFootDimensions[x], tableFootDimensions[y], tableFootDimensions[z]]);
-  mat4.fromTranslation(matT, [0, -(tableDimensions[y] + tableLegDimensions[y] + tableFootDimensions[y]), 0]);
+  mat4.fromRotation(matR, Math.PI/2, [1, 0, 0]);
+  mat4.fromScaling(matS, [tableLegDimensions[x]*0.7, tableLegDimensions[y], tableLegDimensions[z]*0.7]);
+  mat4.fromTranslation(matT, [0, -tableDimensions[y], 0]);
 
   mat4.multiply(modelMatrix, matS, matR);
   mat4.multiply(modelMatrix, matT, modelMatrix);
@@ -434,6 +443,29 @@ function DrawTable()
    // se obtiene la matriz de transformacion de la normal y se envia al shader
   setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
 
+  // se envia al Shader el material del objeto
+  // En este ejemplo es el mismo material para los dos objetos
+  setShaderMaterial(Obsidian);
+
+  drawSolid(exampleCylinder);
+  //Pie de la mesa
+  setProcedural(4);
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromRotation(matR, -Math.PI/2, [1, 0, 0]);
+  mat4.fromScaling(matS, [tableFootDimensions[x], tableFootDimensions[y], tableFootDimensions[z] ]);
+  mat4.fromTranslation(matT, [0, -(tableDimensions[y] + tableLegDimensions[y] + tableFootDimensions[y]), 0]);
+
+  mat4.multiply(modelMatrix, matS, matR);
+  mat4.multiply(modelMatrix, matT, modelMatrix);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  setShaderMaterial(Silver);
   drawSolid(exampleCone);
 
 
@@ -447,6 +479,24 @@ function DrawCubes()
   {
     DrawCubeLines(i);
   }
+
+  //Cubes outside the tower
+  var modelMatrix = mat4.create();
+	var modelViewMatrix = mat4.create();
+	var matT = mat4.create(); //Translation matrix
+	var matR = mat4.create(); //RotationMatrix
+	var matS = mat4.create(); //ScaleMatrix
+
+  mat4.fromScaling(matS, [cubeDimensions[x], cubeDimensions[y], cubeDimensions[z]]);
+
+  for(var i = 0; i < 4; i++)
+  {
+    mat4.identity(modelMatrix);
+    mat4.identity(modelViewMatrix);
+
+    mat4.fromTranslation(matT, [])
+  }
+
 }
 
 function DrawCubeLines(level)
@@ -456,35 +506,43 @@ function DrawCubeLines(level)
 	var matA = mat4.create(); //Translation matrix
 	var matB = mat4.create(); //RotationMatrix
 	var matC = mat4.create(); //ScaleMatrix
+  var count = 0;
 
   mat4.fromRotation(matB, (Math.PI/2)*((level)%2), [0, 1, 0]);
   mat4.fromScaling(matC, [cubeDimensions[x], cubeDimensions[y], cubeDimensions[z]]);
 
 	for(var i = 0; i < 3; i++)
 	{
-	   mat4.identity(modelMatrix);
-     mat4.identity(modelViewMatrix);
+	   if(!isPrime(level + i) || count >= 2)
+     {
+       mat4.identity(modelMatrix);
+       mat4.identity(modelViewMatrix);
 
-     mat4.fromTranslation(matA, [((i-1)*cubeDimensions[z]*(level%2)), ((cubeDimensions[y]*level)+cubeDimensions[y]/2), ((i-1)*cubeDimensions[z]*-((level+1)%2))]);
+       mat4.fromTranslation(matA, [(-4.0+(i-1)*cubeDimensions[z]*(level%2)), ((cubeDimensions[y]*level)+cubeDimensions[y]/2), (-7.0+(i-1)*cubeDimensions[z]*-((level+1)%2))]);
 
-     mat4.multiply(modelMatrix, matB, matC);
-     mat4.multiply(modelMatrix, matA, modelMatrix);
+       mat4.multiply(modelMatrix, matB, matC);
+       mat4.multiply(modelMatrix, matA, modelMatrix);
 
-     mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+       mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
 
-     // se obtiene la matriz de transformacion de la normal y se envia al shader
-     gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
-     setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+       // se obtiene la matriz de transformacion de la normal y se envia al shader
+       gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+       setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
 
-     // se envia al Shader el material del objeto
-     // En este ejemplo es el mismo material para los dos objetos
-     setShaderMaterial(White_plastic);
+       // se envia al Shader el material del objeto
+       // En este ejemplo es el mismo material para los dos objetos
+       setShaderMaterial(White_plastic);
 
-     // se selecciona una unidad de textura
-     gl.activeTexture(gl.TEXTURE3);
+       // se selecciona una unidad de textura
+       gl.activeTexture(gl.TEXTURE3);
 
-     gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
-     drawSolid(exampleCube);
+       gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
+       drawSolid(exampleCube);
+     }
+     else
+     {
+       count++;
+     }
 	}
 }
 

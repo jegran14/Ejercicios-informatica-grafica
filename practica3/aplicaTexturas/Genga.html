@@ -258,10 +258,10 @@
             float dy = abs(tt - 0.5);
             float r = 0.4;
 
-          if(pow(dx,2.0) + pow(dy,2.0) > pow(r,2.0))
+          if(pow(dx,2.0) + pow(dy,2.0) < pow(r,2.0))
             discard;
 
-          gl_FragColor = texture2D(myTexture, texCoords*repetition) * vec4(phong(n,L,V),1.0) * 1.6;
+          gl_FragColor = vec4(phong(n,L,V),1.0) * 1.6;
         }
         else if(UseProcedural == 3) //transparencia
         {
