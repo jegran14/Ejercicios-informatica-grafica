@@ -11,7 +11,7 @@ var totalCubes = 15; //Total of cubes in the genga tower
 //Objects dimensions and positions
 var x = 0, y = 1, z = 2;
 
-var tableDimensions = [20.0, 2.0, 20.0];
+var tableDimensions = [15.0, 2.0, 15.0];
 var tableLegDimensions = [2.0, 30.0, 2.0];
 var tableFootDimensions = [8.0, 1.5, 8.0];
 
@@ -346,6 +346,7 @@ function DrawTable()
   var matS = mat4.create();
 
   //Lateral de la mesa
+  gl.uniform1f(program.ScaleIndex, 5.0);
   mat4.fromScaling(matS, [tableDimensions[x], tableDimensions[y], tableDimensions[z]]);
   mat4.fromRotation(matR, Math.PI/2, [1.0, 0.0, 0.0]);
 
@@ -370,6 +371,7 @@ function DrawTable()
   drawSolid(exampleCylinder);
 
   //Superficies de la mesa
+  gl.uniform1f(program.ScaleIndex, 10.0);
   mat4.identity(modelMatrix);
   mat4.identity(modelViewMatrix);
 
