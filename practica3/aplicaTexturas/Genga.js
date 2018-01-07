@@ -1,17 +1,26 @@
 
 var gl, program;
-var myphi = 0, zeta = 30, radius = 40, fovy = Math.PI/3;
+var myphi = 0, zeta = 30, radius = 40, fovy = Math.PI/2;
+var time = 0.0;
 
 var texturesId = [];
 var texturesIdCube = [];
 
 var totalCubes = 7; //Total of cubes in the genga tower
 
-//Objects dimensions
+//Objects dimensions and positions
 var x = 0, y = 1, z = 2;
+
 var tableDimensions = [20.0, 2.0, 20.0];
-var tableLegDimensions = [3.0, 50.0, 3.0];
+var tableLegDimensions = [2.0, 30.0, 2.0];
+var tableFootDimensions = [8.0, 1.5, 8.0];
+
 var cubeDimensions = [3.0, 1.0, 1.0];
+
+var LavaLampDimensions = [2.0, 4.0, 2.0]; //The size for each part of the lava Lamp exterior
+var LavaIntDimensions = [1.5, 3.0, 1.5];
+var LavaLegDimensions = [1.0, 1.0, 1.0];
+var LavaLampPosition = [8.0, LavaLampDimensions[y] + LavaLegDimensions[y]/2, 8.0];
 
 function getWebGLContext() {
 
@@ -101,20 +110,39 @@ function initShaders() {
   gl.uniform3f(program.Color2Index, 1.0, 1.0, 1.0);
   gl.uniform3f(program.Color1index, 0.3, 0.3, 0.3);
 
-  //Shader de la pata de la mesa
-  program.StripeWidthIndex      = gl.getUniformLocation(program, "StripeWidth");
-  program.StripeScale           = gl.getUniformLocation(program, "StripeScale");
-  gl.uniform1f(program.StripeWidthIndex, 5.0);
-  gl.uniform1f(program.StripeScaleIndex, 20.0);
+  // propia del shader de enrejado
+  program.StripeScaleIndex      = gl.getUniformLocation( program, "StripeScale");
+  gl.uniform2f(program.StripeScaleIndex, 3.5, 10.0);
+
+  //Animation shader
+  program.KIndex                = gl.getUniformLocation(program, "K");
+  program.VelocityIndex         = gl.getUniformLocation(program, "Velocity");
+  program.AmpIndex              = gl.getUniformLocation(program, "Amp");
+  program.TiempoIndex           = gl.getUniformLocation(program, "Time");
+
+  gl.uniform1f (program.KIndex,        4.0);
+  gl.uniform1f (program.VelocityIndex,  1.5);
+  gl.uniform1f (program.AmpIndex,       0.2);
+  gl.uniform1f (program.TiempoIndex,    0.0);
+
+  //Shader de transparencia
+  program.TranspaIndex          = gl.getUniformLocation(program, "alpha");
+  gl.uniform1f(program.TranspaIndex, 0.3);
 
   program.UseProceduralIndex    = gl.getUniformLocation(program, "UseProcedural");
   gl.uniform1i(program.myTextureCubeIndex, 0);
+
+  program.UseAnimationIndex     = gl.getUniformLocation(program, "UseAnimation");
+  gl.uniform1i(program.UseAnimationIndex, 0);
 }
 
 function initRendering() {
 
   gl.clearColor(0.15,0.15,0.15,1.0);
   gl.enable(gl.DEPTH_TEST);
+
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  //gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
 
   setShaderLight();
 
@@ -224,6 +252,11 @@ function setProcedural(i)
   gl.uniform1i(program.UseProceduralIndex, i);
 }
 
+function SetAnimation(i)
+{
+  gl.uniform1i(program.UseAnimationIndex, i);
+}
+
 function drawSolid(model) {
 
   gl.bindBuffer (gl.ARRAY_BUFFER, model.idBufferVertices);
@@ -234,6 +267,14 @@ function drawSolid(model) {
   gl.bindBuffer   (gl.ELEMENT_ARRAY_BUFFER, model.idBufferIndices);
   gl.drawElements (gl.TRIANGLES, model.indices.length, gl.UNSIGNED_SHORT, 0);
 
+}
+
+function UpdateTime()
+{
+  time += 0.01;
+  gl.uniform1f(program.TiempoIndex, time);
+
+  requestAnimationFrame(drawScene);
 }
 
 function drawSkyboxAndReflectObject()
@@ -283,6 +324,7 @@ function drawScene() {
 
   DrawTable();
   DrawCubes();
+  DrawLavaLamp();
 }
 
 function DrawTable()
@@ -364,7 +406,35 @@ function DrawTable()
 
    // se obtiene la matriz de transformacion de la normal y se envia al shader
   setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+
+  // se envia al Shader el material del objeto
+  // En este ejemplo es el mismo material para los dos objetos
+  setShaderMaterial(Silver);
+  gl.activeTexture(gl.TEXTURE3);
+
+  gl.bindTexture(gl.TEXTURE_2D, texturesId[2]);
+
   drawSolid(exampleCylinder);
+
+  //Pie de la mesa
+  setProcedural(0);
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromRotation(matR, -Math.PI/2, [1, 0, 0]);
+  mat4.fromScaling(matS, [tableFootDimensions[x], tableFootDimensions[y], tableFootDimensions[z]]);
+  mat4.fromTranslation(matT, [0, -(tableDimensions[y] + tableLegDimensions[y] + tableFootDimensions[y]), 0]);
+
+  mat4.multiply(modelMatrix, matS, matR);
+  mat4.multiply(modelMatrix, matT, modelMatrix);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+
+  drawSolid(exampleCone);
 
 
 }
@@ -416,6 +486,100 @@ function DrawCubeLines(level)
      gl.bindTexture(gl.TEXTURE_2D, texturesId[1]);
      drawSolid(exampleCube);
 	}
+}
+
+function DrawLavaLamp()
+{
+  var modelMatrix = mat4.create();
+  var modelViewMatrix = mat4.create();
+  var matT = mat4.create();
+  var matR = mat4.create();
+  var matS = mat4.create();
+  //Dibujar interior de la lampara de lava
+  SetAnimation(1);
+  setProcedural(4);
+  mat4.fromTranslation(matT, [LavaLampPosition[x], LavaLampPosition[y], LavaLampPosition[z]]);
+  mat4.fromScaling(matS, [LavaIntDimensions[x], LavaIntDimensions[y], LavaIntDimensions[z]]);
+  mat4.multiply(modelMatrix, matT, matS);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  setShaderMaterial(Ruby);
+
+  drawSolid(exampleSphere);
+  SetAnimation(0);
+
+  //Pie de la lampara de Lava
+  setProcedural(0);
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromRotation(matR, -Math.PI/2, [1, 0, 0]);
+  mat4.fromScaling(matS, [LavaLegDimensions[x], LavaLegDimensions[y], LavaLegDimensions[z]]);
+  mat4.fromTranslation(matT, [LavaLampPosition[x], 0.0, LavaLampPosition[z]]);
+
+  mat4.multiply(modelMatrix, matS, matR);
+  mat4.multiply(modelMatrix, matT, modelMatrix);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  setShaderMaterial(Yellow_plastic);
+  gl.activeTexture(gl.TEXTURE3);
+
+  gl.bindTexture(gl.TEXTURE_2D, texturesId[2]);
+
+  drawSolid(exampleCylinder);
+
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromScaling(matS, [LavaLegDimensions[x]*1.5, 0.5, LavaLegDimensions[z]*1.5]);
+  mat4.fromTranslation(matT, [LavaLampPosition[x], 0.0, LavaLampPosition[z]]);
+  mat4.multiply(modelMatrix, matS, matR);
+  mat4.multiply(modelMatrix, matT, modelMatrix);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+
+  drawSolid(exampleCone);
+
+  //Exterior de la lampara de lava
+  setProcedural(3);
+  gl.depthMask (false);              // impido que se actualice el buffer de profundidad
+  gl.enable    (gl.BLEND);
+
+  mat4.identity(modelMatrix);
+  mat4.identity(modelViewMatrix);
+
+  mat4.fromTranslation(matT, [LavaLampPosition[x], LavaLampPosition[y], LavaLampPosition[z]]);
+  mat4.fromScaling(matS, [LavaLampDimensions[x], LavaLampDimensions[y], LavaLampDimensions[z]]);
+
+  mat4.multiply(modelMatrix, matT, matS);
+  mat4.multiply(modelViewMatrix, getCameraMatrix(), modelMatrix);
+  gl.uniformMatrix4fv(program.modelViewMatrixIndex, false, modelViewMatrix);
+  setShaderModelViewMatrix(modelViewMatrix);
+
+   // se obtiene la matriz de transformacion de la normal y se envia al shader
+  setShaderNormalMatrix(getNormalMatrix(modelViewMatrix));
+  setShaderMaterial(Red_plastic);
+
+  drawSolid(exampleSphere);
+  gl.enable             (gl.CULL_FACE);
+  gl.cullFace           (gl.BACK);
+  drawSolid(exampleSphere);
+  gl.disable            (gl.CULL_FACE);
+
+  gl.depthMask(true);              // permito escribir en el buffer de profundidad
+  gl.disable(gl.BLEND);
 }
 
 function initHandlers() {
@@ -743,7 +907,7 @@ function loadTextureFromServer (filename, texturePos) {
 function initTextures() {
 
   var serverUrl    = "http://cphoto.uji.es/vj1221/assets/textures/";
-  var texFilenames = ["alpha_maps/alpha_map01.jpg", "wood_1163214.JPG"];
+  var texFilenames = ["alpha_maps/alpha_map01.jpg", "wood_1163214.JPG", "painted_wood_stained_4185.JPG"];
 
   for (var texturePos = 0; texturePos < texFilenames.length; texturePos++) {
 
@@ -774,6 +938,7 @@ function initWebGL() {
   initTextures();
 
 //   requestAnimationFrame(drawScene);
+  setInterval(UpdateTime, 40);
   initTexturesCube();
 
 }

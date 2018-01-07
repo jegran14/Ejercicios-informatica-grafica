@@ -21,6 +21,14 @@
 
       uniform float Scale;
 
+      //Animation variables
+      uniform int UseAnimation;
+
+      uniform float Time;
+      uniform float K;
+      uniform float Velocity;
+      uniform float Amp;
+
       attribute vec3 VertexPosition;
       attribute vec3 VertexNormal;
       attribute vec2 VertexTexcoords;
@@ -32,14 +40,37 @@
       varying vec3 R;
 
       void main()  {
+        vec4 ecPosition;
 
-        N               = normalize(normalMatrix * VertexNormal);
-        vec4 ecPosition = modelViewMatrix * vec4(VertexPosition,1.0);
-        ec              = vec3(ecPosition);
+        if (UseAnimation == 0)
+        {
+          N               = normalize(normalMatrix * VertexNormal);
+          ecPosition = modelViewMatrix * vec4(VertexPosition,1.0);
+          ec              = vec3(ecPosition);
 
-        gl_Position     = projectionMatrix * ecPosition;
-        texCoords       = VertexTexcoords;
-        texCoords3      = VertexPosition * Scale;
+
+          }
+          else
+          {
+            vec4 pos = vec4 (VertexPosition, 1.0);
+            float u = K * (pos.y - Velocity * Time);
+            pos.x = pos.x + Amp * sin(u);
+            pos.z = pos.z + Amp * cos(u);
+
+            vec3 n = vec3(0.0);
+            n.xz = normalize(vec2(-K*Amp*cos(u), 1.0));
+
+            ecPosition = modelViewMatrix * pos;
+            N = normalize(normalMatrix * n);
+
+            ec = vec3(ecPosition);
+          }
+
+          gl_Position     = projectionMatrix * ecPosition;
+          texCoords       = VertexTexcoords;
+          texCoords3      = VertexPosition * Scale;
+
+
 
         //Skybox logic
         if(skybox)
@@ -81,9 +112,9 @@
 
       uniform vec3 Color1;
       uniform vec3 Color2;
+      uniform float alpha;
 
-      uniform float StripeScale;
-      uniform float StripeWidth;
+      uniform vec2 StripeScale;
 
       varying vec3 N, ec;
       varying vec2 texCoords;
@@ -218,15 +249,34 @@
     			vec3  newKdNoise = mix (Color1, Color2, s);
           gl_FragColor =vec4( phongP(newKdNoise, n,L,V), 1.0);
         }
-        else if(UseProcedural == 2) //Usar Enrejado
+        else if(UseProcedural == 2) //Usar Enrejado en circunferencias
         {
-          float scaled  = fract(texCoords3.y * StripeScale);
-          float s       = step(StripeWidth, scaled);
+            float ss  = fract(texCoords.s * StripeScale.s);
+            float tt  = fract(texCoords.t * StripeScale.t);
 
-          if(s == 1.0)
+            float dx = abs(ss - 0.5);
+            float dy = abs(tt - 0.5);
+            float r = 0.4;
+
+          if(pow(dx,2.0) + pow(dy,2.0) > pow(r,2.0))
             discard;
 
-          gl_FragColor = vec4(phong(n, L, V), 1.0);
+          gl_FragColor = texture2D(myTexture, texCoords*repetition) * vec4(phong(n,L,V),1.0) * 1.6;
+        }
+        else if(UseProcedural == 3) //transparencia
+        {
+          vec3 myColor;
+
+          if(gl_FrontFacing)
+            myColor = phong(n, L, V);
+          else
+            myColor = phong(-n, L, V);
+
+          gl_FragColor =vec4(myColor, alpha);
+        }
+        else if(UseProcedural == 4) //Color sin textura
+        {
+          gl_FragColor = vec4(phong(n,L,V),1.0) * 1.6;
         }
       }
 
