@@ -87,7 +87,6 @@ function initShaders() {
 
   //skybox
   program.skyboxIndex           = gl.getUniformLocation(program, "skybox");
-  program.invTIndex             = gl.getUniformLocation(program, "invT");
   program.myTextureCube         = gl.getUniformLocation(program, "myTextureCube");
 
   // material
@@ -869,7 +868,7 @@ function initTexturesCube() {
 
 
   var serverUrl  = "http://cphoto.uji.es/vj1221/assets/textures/";
-  var texFolders = ["PereaBeach1/"];
+  var texFolders = ["Yokohama3/"];
 
   for (var texturePos = 0; texturePos < texFolders.length; texturePos++) {
 
