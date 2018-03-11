@@ -2,42 +2,42 @@
 <html>
 
   <head>
-  
+
     <meta charset="utf-8">
     <title> Informatica Grafica </title>
-    
+
     <style>
       canvas {border: 1px solid black;}
     </style>
-    
+
     <script id="myVertexShader" type="x-shader/x-vertex">
-        
+
       uniform   mat4 projectionMatrix;
       uniform   mat4 modelViewMatrix;
       uniform   mat3 normalMatrix;
-        
+
       attribute vec3 VertexPosition;
       attribute vec3 VertexNormal;
       attribute vec2 VertexTexcoords;
-        
+
       varying vec3 N, ec;
       varying vec2 texCoords;
-        
+
       void main()  {
-        
+
         N  = normalize(normalMatrix * VertexNormal);
         vec4 ecPosition= modelViewMatrix * vec4(VertexPosition,1.0);
         ec = vec3(ecPosition);
-          
+
         gl_Position = projectionMatrix * ecPosition;
         texCoords   = VertexTexcoords;
-        
+
       }
-      
+
     </script>
-      
+
     <script id="myFragmentShader" type="x-shader/x-fragment">
-        
+
       precision mediump float;
       struct LightData {
         vec3 Position; // Posición en coordenadas del ojo
@@ -46,7 +46,7 @@
         vec3 Ls;       // Especular
       };
       uniform LightData Light;
-      
+
       struct MaterialData {
         vec3 Ka;       // Ambiente
         vec3 Kd;       // Difusa
@@ -54,58 +54,58 @@
         float alpha;   // Brillo
       };
       uniform MaterialData Material;
-      
+
       uniform vec2 Scale;
-      uniform vec2 Threshold;        
-      
+      uniform vec2 Threshold;
+
       varying vec3  N, ec;
       varying vec2  texCoords;
-      
+
       vec3 phong (vec3 N, vec3 L, vec3 V) {
-        
+
         vec3  ambient  = Material.Ka * Light.La;
         vec3  diffuse  = vec3(0.0);
         vec3  specular = vec3(0.0);
-        
+
         float NdotL    = dot (N,L);
-        
+
         if (NdotL > 0.0) {
           vec3  R       = reflect(-L, N);;
           float RdotV_n = pow(max(0.0, dot(R,V)), Material.alpha);
-          
+
           diffuse  = NdotL   * (Light.Ld * Material.Kd);
           specular = RdotV_n * (Light.Ls * Material.Ks);
         }
-        
+
         return (ambient + diffuse + specular);
-        
+
       }
-      
+
       void main() {
-        
+
         float ss = fract(texCoords.s * Scale.s);
         float tt = fract(texCoords.t * Scale.t);
-        
-        if ((ss > Threshold.s) && (tt > Threshold.t))
+
+        if (abs(ss - tt) > 0.5)
           discard;
 
         vec3 n = normalize(N);
         vec3 L = normalize(Light.Position - ec);
         vec3 V = normalize(-ec);
-          
+
         //if ( gl_FrontFacing )
           gl_FragColor = vec4( phong(n,L,V), 1.0);
         //else
         //  gl_FragColor = vec4( phong(-n,L,V), 1.0);
-          
+
       }
-      
+
     </script>
 
   </head>
-  
+
   <body>
-  
+
     <button>Plano</button>
     <button>Cubo</button>
     <button>Cono</button>
@@ -118,16 +118,16 @@
     Scale T:      <input type="range" name="ScaleT" min="1" max="100" value="50"><br>
     Threshold S:  <input type="range" name="ThresholdS" min="0" max="100" value="50"><br>
     Threshold T:  <input type="range" name="ThresholdT" min="0" max="100" value="50"><br>
-    <br>    
+    <br>
     <canvas id="myCanvas" width="400" height="400">
       El Navegador no soporta HTML5
     </canvas>
-      
+
     <script src="gl-matrix-min.js"></script>
     <script src="materiales.js"></script>
     <script src="primitivas.js"></script>
     <script src="enrejado.js"></script>
-      
+
     </body>
-    
+
 </html>
